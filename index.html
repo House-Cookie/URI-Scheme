@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>URI Launcher</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #2a2a3d;
+    --accent: #00e5ff;
+    --accent2: #ff3cac;
+    --text: #e8e8f0;
+    --muted: #5a5a7a;
+    --success: #00ff88;
+    --error: #ff4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%);
+    top: -200px;
+    right: -200px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb2 {
+    position: fixed;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,60,172,0.05) 0%, transparent 70%);
+    bottom: -100px;
+    left: -100px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo {
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 0.8rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 400;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    animation: fadeUp 0.6s 0.15s ease both;
+  }
+
+  .input-label {
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--muted);
+  }
+
+  .btn-parse {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 0.85rem 1.4rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-parse:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  }
+
+  .btn-parse:active { transform: translateY(0); }
+
+  /* Quick examples */
+  .examples {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .examples-label {
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 100%;
+    margin-bottom: 0.1rem;
+  }
+
+  .chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Result area */
+  #result {
+    margin-top: 1.5rem;
+    display: none;
+    animation: fadeUp 0.35s ease both;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .result-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+    animation: pulse 2s infinite;
+  }
+
+  .result-label {
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--success);
+  }
+
+  .app-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .app-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,229,255,0.04) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .app-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,229,255,0.1);
+  }
+
+  .app-card:hover::before { opacity: 1; }
+
+  .app-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  .app-info { flex: 1; min-width: 0; }
+
+  .app-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.15rem;
+  }
+
+  .app-scheme {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-arrow {
+    color: var(--muted);
+    font-size: 1.2rem;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .app-card:hover .app-arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  /* Error state */
+  .error-msg {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--error);
+    font-size: 0.85rem;
+    font-family: 'Space Mono', monospace;
+    padding: 0.8rem 1rem;
+    background: rgba(255,68,68,0.07);
+    border: 1px solid rgba(255,68,68,0.2);
+    border-radius: 8px;
+  }
+
+  /* Divider + info */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0 1.2rem;
+  }
+
+  .uri-breakdown {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .uri-breakdown span {
+    color: var(--text);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb"></div>
+<div class="glow-orb2"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">// URI Launcher</div>
+    <h1>Abre <span>cualquier app</span><br>con un URI</h1>
+    <p class="subtitle">Escribe un URI scheme y obtén el enlace para abrirlo directamente.</p>
+  </header>
+
+  <div class="card">
+    <label class="input-label" for="uriInput">URI Scheme</label>
+    <div class="input-wrap">
+      <input
+        type="text"
+        id="uriInput"
+        placeholder="tel:+521234567890"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="btn-parse" onclick="parseURI()">Abrir →</button>
+    </div>
+
+    <div class="examples">
+      <span class="examples-label">Ejemplos</span>
+      <button class="chip" onclick="fillExample('tel:+521234567890')">tel:</button>
+      <button class="chip" onclick="fillExample('mailto:hola@ejemplo.com')">mailto:</button>
+      <button class="chip" onclick="fillExample('sms:+521234567890')">sms:</button>
+      <button class="chip" onclick="fillExample('whatsapp://send?phone=521234567890')">whatsapp://</button>
+      <button class="chip" onclick="fillExample('maps://?q=Villahermosa')">maps://</button>
+      <button class="chip" onclick="fillExample('spotify:track:4uLU6hMCjMI75M1A2tKUQC')">spotify:</button>
+      <button class="chip" onclick="fillExample('instagram://user?username=anthropic')">instagram://</button>
+      <button class="chip" onclick="fillExample('https://claude.ai')">https://</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <footer>Presiona Enter o el botón para generar el enlace</footer>
+</div>
+
+<script>
+  const knownSchemes = {
+    'tel':        { name: 'Teléfono',      icon: '📞' },
+    'mailto':     { name: 'Correo',        icon: '✉️' },
+    'sms':        { name: 'Mensajes',      icon: '💬' },
+    'mms':        { name: 'MMS',           icon: '📨' },
+    'facetime':   { name: 'FaceTime',      icon: '📹' },
+    'facetime-audio': { name: 'FaceTime Audio', icon: '📞' },
+    'whatsapp':   { name: 'WhatsApp',      icon: '💚' },
+    'instagram':  { name: 'Instagram',     icon: '📸' },
+    'twitter':    { name: 'Twitter / X',   icon: '🐦' },
+    'fb':         { name: 'Facebook',      icon: '👤' },
+    'maps':       { name: 'Apple Maps',    icon: '🗺️' },
+    'comgooglemaps': { name: 'Google Maps', icon: '📍' },
+    'geo':        { name: 'Mapas (geo)',   icon: '📍' },
+    'spotify':    { name: 'Spotify',       icon: '🎵' },
+    'youtube':    { name: 'YouTube',       icon: '▶️' },
+    'googlechrome':{ name: 'Chrome',       icon: '🌐' },
+    'firefox':    { name: 'Firefox',       icon: '🦊' },
+    'http':       { name: 'Navegador Web', icon: '🌐' },
+    'https':      { name: 'Navegador Web', icon: '🌐' },
+    'ftp':        { name: 'FTP',           icon: '📁' },
+    'slack':      { name: 'Slack',         icon: '💼' },
+    'telegram':   { name: 'Telegram',      icon: '✈️' },
+    'tg':         { name: 'Telegram',      icon: '✈️' },
+    'zoom':       { name: 'Zoom',          icon: '🎥' },
+    'skype':      { name: 'Skype',         icon: '📡' },
+    'viber':      { name: 'Viber',         icon: '💜' },
+    'tiktok':     { name: 'TikTok',        icon: '🎵' },
+    'snapchat':   { name: 'Snapchat',      icon: '👻' },
+    'linkedin':   { name: 'LinkedIn',      icon: '💼' },
+    'pinterest':  { name: 'Pinterest',     icon: '📌' },
+    'reddit':     { name: 'Reddit',        icon: '🤖' },
+    'discord':    { name: 'Discord',       icon: '🎮' },
+    'twitch':     { name: 'Twitch',        icon: '🟣' },
+    'netflix':    { name: 'Netflix',       icon: '🎬' },
+    'music':      { name: 'Apple Music',   icon: '🎶' },
+    'itms-apps':  { name: 'App Store',     icon: '📦' },
+    'market':     { name: 'Play Store',    icon: '🛒' },
+    'mailto':     { name: 'Correo',        icon: '✉️' },
+    'cal':        { name: 'Calendario',    icon: '📅' },
+    'calshow':    { name: 'Calendario',    icon: '📅' },
+  };
+
+  function fillExample(val) {
+    document.getElementById('uriInput').value = val;
+    parseURI();
+  }
+
+  function parseURI() {
+    const raw = document.getElementById('uriInput').value.trim();
+    const resultEl = document.getElementById('result');
+
+    if (!raw) {
+      resultEl.style.display = 'none';
+      return;
+    }
+
+    // Extract scheme
+    const colonIdx = raw.indexOf(':');
+    if (colonIdx === -1) {
+      showError(resultEl, 'No se detectó un esquema URI válido. Asegúrate de incluir ":".');
+      return;
+    }
+
+    const scheme = raw.substring(0, colonIdx).toLowerCase();
+    const rest = raw.substring(colonIdx + 1);
+
+    const known = knownSchemes[scheme];
+    const appName = known ? known.name : capitalize(scheme);
+    const appIcon = known ? known.icon : '🔗';
+
+    // Build breakdown
+    let breakdown = '';
+    try {
+      const url = new URL(raw);
+      if (url.hostname) {
+        breakdown = `
+          <hr class="divider">
+          <div class="uri-breakdown">
+            esquema: <span>${scheme}</span> &nbsp;·&nbsp;
+            host: <span>${url.hostname}</span>
+            ${url.pathname && url.pathname !== '/' ? `&nbsp;·&nbsp; ruta: <span>${url.pathname}</span>` : ''}
+            ${url.search ? `&nbsp;·&nbsp; params: <span>${url.search}</span>` : ''}
+          </div>
+        `;
+      }
+    } catch(e) {
+      // Simple scheme like tel: or mailto: — just show scheme + value
+      breakdown = `
+        <hr class="divider">
+        <div class="uri-breakdown">
+          esquema: <span>${scheme}</span>
+          ${rest ? ` &nbsp;·&nbsp; valor: <span>${rest}</span>` : ''}
+        </div>
+      `;
+    }
+
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <div class="result-header">
+        <div class="dot"></div>
+        <span class="result-label">Enlace generado</span>
+      </div>
+      <a href="${escapeHref(raw)}" class="app-card" title="Abrir en ${appName}">
+        <div class="app-icon">${appIcon}</div>
+        <div class="app-info">
+          <div class="app-name">${appName}</div>
+          <div class="app-scheme">${raw}</div>
+        </div>
+        <div class="app-arrow">→</div>
+      </a>
+      ${breakdown}
+    `;
+  }
+
+  function showError(el, msg) {
+    el.style.display = 'block';
+    el.innerHTML = `<div class="error-msg">⚠ ${msg}</div>`;
+  }
+
+  function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function escapeHref(uri) {
+    return uri.replace(/"/g, '%22').replace(/'/g, '%27');
+  }
+
+  // Enter key
+  document.getElementById('uriInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') parseURI();
+  });
+
+  // Live parse as you type
+  document.getElementById('uriInput').addEventListener('input', () => {
+    const val = document.getElementById('uriInput').value;
+    if (val.includes(':')) parseURI();
+    else document.getElementById('result').style.display = 'none';
+  });
+</script>
+</body>
+</html>
